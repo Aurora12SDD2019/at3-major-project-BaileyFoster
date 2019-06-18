@@ -5,7 +5,7 @@ reviewing the code later. make sure you outline in detail what the module does a
 
 __author__ = "Bailey Foster"
 __license__ = "GPL"
-__version__ = "1.0.1"
+__version__ = "1.1"
 __email__ = "bailey.foster5@education.nsw.com.au"
 __status__ = "Alpha"
 
