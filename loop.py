@@ -5,14 +5,12 @@ reviewing the code later. make sure you outline in detail what the module does a
 
 __author__ = "Bailey Foster"
 __license__ = "GPL"
-__version__ = "1.2"
+__version__ = "1.3"
 __email__ = "bailey.foster5@education.nsw.com.au"
 __status__ = "Alpha"
 
 # dependencies
 import pygame
-
-location = ""
 
 class Setup:
     def __init__(self):
@@ -120,6 +118,7 @@ class Levels:
     def __init__(self):
         self.coin = pygame.transform.scale(pygame.image.load(r'media\coin.png'), (5, 5))
         self.powerUp = pygame.image.load(r'media\speedUp.png')
+        self.teleporter = pygame.image.load(r'media\teleporter.png')
         self.animation1_RIGHT = pygame.transform.scale(pygame.image.load(r'media\pacWoman1\pacWoman1_RIGHT.png'), (15, 15))
         self.animation2_RIGHT = pygame.transform.scale(pygame.image.load(r'media\pacWoman2\pacWoman2_RIGHT.png'), (15, 15))
         self.animation1_LEFT = pygame.transform.scale(pygame.image.load(r'media\pacWoman1\pacWoman1_LEFT.png'), (15, 15))
@@ -135,9 +134,10 @@ class Levels:
         self.lead_x_change = 0
         self.done = False
         self.currentAnimation = self.animation1_RIGHT
-        self.coins = []
+        self.coins = [(200, 125), (395, 125), (600, 125), (400, 300), (400, 475)]
         self.walls = []
         self.powerUps = []
+        self.teleporterCoords = []
         self.pointsToWin = 0
 
     def winCondition(self):
@@ -145,20 +145,41 @@ class Levels:
             gameComponents.moveOn = True
             gameComponents.gameProgression = True
             menu.menuScreenNo += 1
+            if menu.menuScreenNo == 2:
+                levelAccess.coins = [(200, 125), (400, 300), (400, 450)]
+            if menu.menuScreenNo == 3:
+                levelAccess.coins = [(200, 125), (500, 125)]
+
 
     def collision(self):
         global location
         location = levelAccess.currentAnimation.get_rect(
             topleft=(levelAccess.positionx, levelAccess.positiony))
         for coin in levelAccess.coins:
-            coords = gameComponents.gameDisplay.blit(self.coin, coin)
+            coords = gameComponents.gameDisplay.blit(levelAccess.coin, coin)
             if location.colliderect(coords):
                 levelAccess.coins.remove(coin)
-        for powerUp in levelAccess.powerUps:
-            addOn = gameComponents.gameDisplay.blit(self.powerUp, powerUp)
-            if location.colliderect(addOn):
-                levelAccess.powerUps.remove(powerUp)
-                gameComponents.movementAmount = 1.5
+        if len(levelAccess.powerUps) != 0:
+            for powerUp in levelAccess.powerUps:
+                addOn = gameComponents.gameDisplay.blit(self.powerUp, powerUp)
+                if location.colliderect(addOn):
+                    levelAccess.powerUps.remove(powerUp)
+                    print(len(levelAccess.powerUps))
+                    gameComponents.movementAmount = 1.5
+        for teleporter in levelAccess.teleporterCoords:
+            teleporters = gameComponents.gameDisplay.blit(self.teleporter, teleporter)
+            if location.colliderect(teleporters):
+                if teleporter == levelAccess.teleporterCoords[0]:
+                    (levelAccess.positionx, levelAccess.positiony) = levelAccess.teleporterCoords[1]
+                    levelAccess.positionx += 20
+                else:
+                    (levelAccess.positionx, levelAccess.positiony) = levelAccess.teleporterCoords[0]
+                    levelAccess.positionx -= 20
+        for wall in levelAccess.walls:
+            wallHit = pygame.draw.line(gameComponents.gameDisplay, gameComponents.purple, wall[0], wall[1], wall[2])
+            if location.colliderect(wallHit):
+                levelAccess.lead_y_change = 0
+                levelAccess.lead_x_change = 0
 
 
     def helpLevel(self):
@@ -166,18 +187,10 @@ class Levels:
             self.walls = [((100, 100), (700, 100), 10), ((100, 150), (375, 150), 10), ((425, 150), (700, 150), 10),
                           ((375, 146), (375, 500), 10), ((425, 146), (425, 500), 10), ((95, 96), (95, 155), 10),
                           ((700, 96), (700, 155), 10), ((375, 495), (425, 495), 10)]
-            self.coins = [(200, 125), (395, 125), (600, 125), (400, 300), (400, 475)]
             gameComponents.moveOn = False
             levelAccess.done = True
         gameComponents.gameDisplay.fill(gameComponents.black)
         gameComponents.custom_message(gameComponents.textbox, "Collect all Coins to Continue", gameComponents.white, 20, 0)
-        location = levelAccess.currentAnimation.get_rect(
-            topleft=(levelAccess.positionx, levelAccess.positiony))
-        for wall in levelAccess.walls:
-            wallHit = pygame.draw.line(gameComponents.gameDisplay, gameComponents.purple, wall[0], wall[1], wall[2])
-            if location.colliderect(wallHit):
-                levelAccess.lead_y_change = 0
-                levelAccess.lead_x_change = 0
 
         if menu.frames < 30:
             if levelAccess.rotation == 1:
@@ -213,13 +226,52 @@ class Levels:
 
     def powerUpTutorial(self):
         if not levelAccess.done:
-            self.walls = self.walls = [((100, 100), (425, 100), 10), ((100, 150), (375, 150), 10),
+            levelAccess.powerUps = [(390, 115)]
+            levelAccess.walls = [((100, 100), (425, 100), 10), ((100, 150), (375, 150), 10),
                           ((375, 146), (375, 500), 10), ((425, 146), (425, 500), 10), ((95, 96), (95, 155), 10), ((425, 96), (425, 500), 10), ((375, 495), (425, 495), 10)]
-            self.coins = [(200, 125), (400, 300), (400, 450)]
-            self.powerUps = [(390, 115)]
             levelAccess.done = True
         gameComponents.gameDisplay.fill(gameComponents.black)
         gameComponents.custom_message(gameComponents.textbox, "Collect the Speed Power Up to Continue", gameComponents.white, 20, 0)
+        location = levelAccess.currentAnimation.get_rect(
+            topleft=(levelAccess.positionx, levelAccess.positiony))
+        for wall in levelAccess.walls:
+            wallHit = pygame.draw.line(gameComponents.gameDisplay, gameComponents.purple, wall[0], wall[1], wall[2])
+            if location.colliderect(wallHit):
+                levelAccess.lead_y_change = 0
+                levelAccess.lead_x_change = 0
+
+        if menu.frames < 30:
+            if levelAccess.rotation == 1:
+                self.currentAnimation = self.animation1_RIGHT
+            if levelAccess.rotation == 2:
+                self.currentAnimation = self.animation1_LEFT
+            if levelAccess.rotation == 3:
+                self.currentAnimation = self.animation1_UP
+            if levelAccess.rotation == 4:
+                self.currentAnimation = self.animation1_DOWN
+        else:
+            if levelAccess.rotation == 1:
+                self.currentAnimation = self.animation2_RIGHT
+            if levelAccess.rotation == 2:
+                self.currentAnimation = self.animation2_LEFT
+            if levelAccess.rotation == 3:
+                self.currentAnimation = self.animation2_UP
+            if levelAccess.rotation == 4:
+                self.currentAnimation = self.animation2_DOWN
+
+        gameComponents.gameDisplay.blit(self.currentAnimation, (levelAccess.positionx, levelAccess.positiony))
+
+        gameComponents.eventGetter()
+
+    def teleporterTutorial(self):
+        if not levelAccess.done:
+            self.walls = [((100, 100), (300, 100), 10), ((100, 150), (300, 150), 10), ((104, 100), (104, 150), 10), ((295, 100), (295, 150), 10), ((400, 100), (600, 100), 10), ((400, 150), (600, 150), 10), ((404, 100), (404, 150), 10), ((595, 100), (595, 150), 10)]
+            self.powerUps = []
+            self.teleporterCoords = [(250, 115), (425, 115)]
+            self.positionx = 120
+            self.positiony = 115
+            levelAccess.done = True
+        gameComponents.gameDisplay.fill(gameComponents.black)
         location = levelAccess.currentAnimation.get_rect(
             topleft=(levelAccess.positionx, levelAccess.positiony))
         for wall in levelAccess.walls:
@@ -256,7 +308,7 @@ class Menu:
         self.backGround1 = pygame.image.load(r'media\menuBackGround1.png')
         self.backGround2 = pygame.image.load(r'media\menuBackGround2.png')
         self.helpScreen1 = pygame.image.load(r'media\HelpScreen1.png')
-        self.menuScreenNo = 2
+        self.menuScreenNo = 0
         self.frames = 0
 
     def menuScreen(self):
@@ -289,6 +341,8 @@ class Menu:
                 gameComponents.gameDisplay.blit(self.helpScreen1, (25, 0))
                 gameComponents.buttonify("Back to Menu", 50, 400, 300, 100, gameComponents.red, gameComponents.brightRed, "menu")
                 gameComponents.buttonify("Next Page", 450, 400, 300, 100, gameComponents.green, gameComponents.brightGreen, "nextMenu")
+                levelAccess.coins = [(200, 125), (395, 125), (600, 125), (400, 300), (400, 475)]
+
             elif menu.menuScreenNo == 1:
                 levelAccess.helpLevel()
                 levelAccess.collision()
@@ -300,6 +354,14 @@ class Menu:
                 levelAccess.done = False
             elif menu.menuScreenNo == 2:
                 levelAccess.powerUpTutorial()
+                levelAccess.collision()
+                levelAccess.winCondition()
+                self.frames += 1
+                if self.frames == 60:
+                    self.frames = 0
+                levelAccess.done = False
+            elif menu.menuScreenNo == 3:
+                levelAccess.teleporterTutorial()
                 levelAccess.collision()
                 levelAccess.winCondition()
                 self.frames += 1
