@@ -5,13 +5,14 @@ reviewing the code later. make sure you outline in detail what the module does a
 
 __author__ = "Bailey Foster"
 __license__ = "GPL"
-__version__ = "1.0.1"
+__version__ = "1.2"
 __email__ = "bailey.foster5@education.nsw.com.au"
 __status__ = "Alpha"
 
 # dependencies
 import pygame
 
+location = ""
 
 class Setup:
     def __init__(self):
@@ -29,12 +30,15 @@ class Setup:
         self.brightBlue = (0, 0, 255)
         self.orange = (255, 69, 0)
         self.brightOrange = (255, 127, 80)
+        self.purple = (102, 102, 255)
 
         # sets size of screen/window
         self.WIDTH = 800
         self.HEIGHT = 600
 
         self.moveOn = False
+
+        self.movementAmount = 1
 
         self.textbox = pygame.font.SysFont("Arial", 40)
         self.selections = pygame.font.SysFont("Arial", 20)
@@ -45,6 +49,8 @@ class Setup:
         self.clock = pygame.time.Clock()
 
         pygame.display.set_caption('inProgress')
+
+        self.gameProgression = False
 
     def custom_message(self, textType, msg, colour, theX, theY):  # this function is used to put messages on the screen
         screen_text = textType.render(msg, True, colour)  # sets what the display will look like
@@ -67,6 +73,11 @@ class Setup:
                     quit()
                 if Action == "help":
                     gameComponents.moveOn = True
+                if Action == "menu":
+                    gameComponents.moveOn = True
+                if Action == "nextMenu":
+                    menu.menuScreenNo = 1
+
 
 
         else:
@@ -77,11 +88,175 @@ class Setup:
         textRect.center = ((theX + (theW / 2)), (theY + (theH / 2)))
         self.gameDisplay.blit(textSurf, textRect)
 
+    def eventGetter(self):
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_a:
+                    levelAccess.lead_x_change = -gameComponents.movementAmount
+                    levelAccess.lead_y_change = 0
+                    levelAccess.rotation = 2
+                elif event.key == pygame.K_d:
+                    levelAccess.lead_x_change = gameComponents.movementAmount
+                    levelAccess.lead_y_change = 0
+                    levelAccess.rotation = 1
+                elif event.key == pygame.K_w:
+                    levelAccess.lead_y_change = -gameComponents.movementAmount
+                    levelAccess.lead_x_change = 0
+                    levelAccess.rotation = 3
+                elif event.key == pygame.K_s:
+                    levelAccess.lead_y_change = gameComponents.movementAmount
+                    levelAccess.lead_x_change = 0
+                    levelAccess.rotation = 4
+
+        levelAccess.positionx += levelAccess.lead_x_change
+        levelAccess.positiony += levelAccess.lead_y_change
+
+
+class Levels:
+    def __init__(self):
+        self.coin = pygame.transform.scale(pygame.image.load(r'media\coin.png'), (5, 5))
+        self.powerUp = pygame.image.load(r'media\speedUp.png')
+        self.animation1_RIGHT = pygame.transform.scale(pygame.image.load(r'media\pacWoman1\pacWoman1_RIGHT.png'), (15, 15))
+        self.animation2_RIGHT = pygame.transform.scale(pygame.image.load(r'media\pacWoman2\pacWoman2_RIGHT.png'), (15, 15))
+        self.animation1_LEFT = pygame.transform.scale(pygame.image.load(r'media\pacWoman1\pacWoman1_LEFT.png'), (15, 15))
+        self.animation2_LEFT = pygame.transform.scale(pygame.image.load(r'media\pacWoman2\pacWoman2_LEFT.png'), (15, 15))
+        self.animation1_DOWN = pygame.transform.scale(pygame.image.load(r'media\pacWoman1\pacWoman1_DOWN.png'), (15, 15))
+        self.animation2_DOWN = pygame.transform.scale(pygame.image.load(r'media\pacWoman2\pacWoman2_DOWN.png'), (15, 15))
+        self.animation1_UP = pygame.transform.scale(pygame.image.load(r'media\pacWoman1\pacWoman1_UP.png'), (15, 15))
+        self.animation2_UP = pygame.transform.scale(pygame.image.load(r'media\pacWoman2\pacWoman2_UP.png'), (15, 15))
+        self.rotation = 0
+        self.positionx = 120
+        self.positiony = 115
+        self.lead_y_change = 0
+        self.lead_x_change = 0
+        self.done = False
+        self.currentAnimation = self.animation1_RIGHT
+        self.coins = []
+        self.walls = []
+        self.powerUps = []
+        self.pointsToWin = 0
+
+    def winCondition(self):
+        if int(len(levelAccess.coins)) == 0:
+            gameComponents.moveOn = True
+            gameComponents.gameProgression = True
+            menu.menuScreenNo += 1
+
+    def collision(self):
+        global location
+        location = levelAccess.currentAnimation.get_rect(
+            topleft=(levelAccess.positionx, levelAccess.positiony))
+        for coin in levelAccess.coins:
+            coords = gameComponents.gameDisplay.blit(self.coin, coin)
+            if location.colliderect(coords):
+                levelAccess.coins.remove(coin)
+        for powerUp in levelAccess.powerUps:
+            addOn = gameComponents.gameDisplay.blit(self.powerUp, powerUp)
+            if location.colliderect(addOn):
+                levelAccess.powerUps.remove(powerUp)
+                gameComponents.movementAmount = 1.5
+
+
+    def helpLevel(self):
+        if not levelAccess.done:
+            self.walls = [((100, 100), (700, 100), 10), ((100, 150), (375, 150), 10), ((425, 150), (700, 150), 10),
+                          ((375, 146), (375, 500), 10), ((425, 146), (425, 500), 10), ((95, 96), (95, 155), 10),
+                          ((700, 96), (700, 155), 10), ((375, 495), (425, 495), 10)]
+            self.coins = [(200, 125), (395, 125), (600, 125), (400, 300), (400, 475)]
+            gameComponents.moveOn = False
+            levelAccess.done = True
+        gameComponents.gameDisplay.fill(gameComponents.black)
+        gameComponents.custom_message(gameComponents.textbox, "Collect all Coins to Continue", gameComponents.white, 20, 0)
+        location = levelAccess.currentAnimation.get_rect(
+            topleft=(levelAccess.positionx, levelAccess.positiony))
+        for wall in levelAccess.walls:
+            wallHit = pygame.draw.line(gameComponents.gameDisplay, gameComponents.purple, wall[0], wall[1], wall[2])
+            if location.colliderect(wallHit):
+                levelAccess.lead_y_change = 0
+                levelAccess.lead_x_change = 0
+
+        if menu.frames < 30:
+            if levelAccess.rotation == 1:
+                self.currentAnimation = self.animation1_RIGHT
+            if levelAccess.rotation == 2:
+                self.currentAnimation = self.animation1_LEFT
+            if levelAccess.rotation == 3:
+                self.currentAnimation = self.animation1_UP
+            if levelAccess.rotation == 4:
+                self.currentAnimation = self.animation1_DOWN
+        else:
+            if levelAccess.rotation == 1:
+                self.currentAnimation = self.animation2_RIGHT
+            if levelAccess.rotation == 2:
+                self.currentAnimation = self.animation2_LEFT
+            if levelAccess.rotation == 3:
+                self.currentAnimation = self.animation2_UP
+            if levelAccess.rotation == 4:
+                self.currentAnimation = self.animation2_DOWN
+
+        gameComponents.gameDisplay.blit(self.currentAnimation, (levelAccess.positionx, levelAccess.positiony))
+
+        gameComponents.eventGetter()
+
+        if levelAccess.positionx >= gameComponents.WIDTH:
+            levelAccess.positionx = 10
+        if levelAccess.positionx <= 0:
+            levelAccess.positionx = gameComponents.WIDTH - 10
+        if levelAccess.positiony >= gameComponents.HEIGHT:
+            levelAccess.positiony = 10
+        if levelAccess.positiony <= 0:
+            levelAccess.positiony = gameComponents.HEIGHT - 10
+
+    def powerUpTutorial(self):
+        if not levelAccess.done:
+            self.walls = self.walls = [((100, 100), (425, 100), 10), ((100, 150), (375, 150), 10),
+                          ((375, 146), (375, 500), 10), ((425, 146), (425, 500), 10), ((95, 96), (95, 155), 10), ((425, 96), (425, 500), 10), ((375, 495), (425, 495), 10)]
+            self.coins = [(200, 125), (400, 300), (400, 450)]
+            self.powerUps = [(390, 115)]
+            levelAccess.done = True
+        gameComponents.gameDisplay.fill(gameComponents.black)
+        gameComponents.custom_message(gameComponents.textbox, "Collect the Speed Power Up to Continue", gameComponents.white, 20, 0)
+        location = levelAccess.currentAnimation.get_rect(
+            topleft=(levelAccess.positionx, levelAccess.positiony))
+        for wall in levelAccess.walls:
+            wallHit = pygame.draw.line(gameComponents.gameDisplay, gameComponents.purple, wall[0], wall[1], wall[2])
+            if location.colliderect(wallHit):
+                levelAccess.lead_y_change = 0
+                levelAccess.lead_x_change = 0
+
+        if menu.frames < 30:
+            if levelAccess.rotation == 1:
+                self.currentAnimation = self.animation1_RIGHT
+            if levelAccess.rotation == 2:
+                self.currentAnimation = self.animation1_LEFT
+            if levelAccess.rotation == 3:
+                self.currentAnimation = self.animation1_UP
+            if levelAccess.rotation == 4:
+                self.currentAnimation = self.animation1_DOWN
+        else:
+            if levelAccess.rotation == 1:
+                self.currentAnimation = self.animation2_RIGHT
+            if levelAccess.rotation == 2:
+                self.currentAnimation = self.animation2_LEFT
+            if levelAccess.rotation == 3:
+                self.currentAnimation = self.animation2_UP
+            if levelAccess.rotation == 4:
+                self.currentAnimation = self.animation2_DOWN
+
+        gameComponents.gameDisplay.blit(self.currentAnimation, (levelAccess.positionx, levelAccess.positiony))
+
+        gameComponents.eventGetter()
 
 class Menu:
     def __init__(self):
-        self.backGround1 = pygame.image.load(r'C:\at3-major-project-BaileyFoster\media\menuBackGround1.png')
-        self.backGround2 = pygame.image.load(r'C:\at3-major-project-BaileyFoster\media\menuBackGround2.png')
+        self.backGround1 = pygame.image.load(r'media\menuBackGround1.png')
+        self.backGround2 = pygame.image.load(r'media\menuBackGround2.png')
+        self.helpScreen1 = pygame.image.load(r'media\HelpScreen1.png')
+        self.menuScreenNo = 2
         self.frames = 0
 
     def menuScreen(self):
@@ -95,12 +270,7 @@ class Menu:
             gameComponents.buttonify("help", 400, 275, 300, 100, gameComponents.blue, gameComponents.brightBlue, "help")
             gameComponents.buttonify("quit", 400, 400, 300, 100, gameComponents.red, gameComponents.brightRed, "quit")
 
-
-            events = pygame.event.get()
-            for event in events:
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    quit()
+            gameComponents.eventGetter()
 
             gameComponents.clock.tick(60)
             pygame.display.update()
@@ -108,13 +278,42 @@ class Menu:
             if self.frames == 60:
                 self.frames = 0
 
+        self.helpScreen()
+
+
     def helpScreen(self):
         gameComponents.moveOn = False
         while not gameComponents.moveOn:
-            gameComponents.gameDisplay.fill(gameComponents.black)
+            if menu.menuScreenNo == 0:
+                gameComponents.gameDisplay.fill(gameComponents.black)
+                gameComponents.gameDisplay.blit(self.helpScreen1, (25, 0))
+                gameComponents.buttonify("Back to Menu", 50, 400, 300, 100, gameComponents.red, gameComponents.brightRed, "menu")
+                gameComponents.buttonify("Next Page", 450, 400, 300, 100, gameComponents.green, gameComponents.brightGreen, "nextMenu")
+            elif menu.menuScreenNo == 1:
+                levelAccess.helpLevel()
+                levelAccess.collision()
+                levelAccess.winCondition()
+                self.frames += 1
+                if self.frames == 60:
+                    self.frames = 0
+                gameComponents.moveOn = False
+                levelAccess.done = False
+            elif menu.menuScreenNo == 2:
+                levelAccess.powerUpTutorial()
+                levelAccess.collision()
+                levelAccess.winCondition()
+                self.frames += 1
+                if self.frames == 60:
+                    self.frames = 0
+
+            gameComponents.eventGetter()
+            gameComponents.clock.tick(60)
+            pygame.display.update()
 
 
 
 gameComponents = Setup()
 menu = Menu()
-menu.menuScreen()
+levelAccess = Levels()
+while not gameComponents.gameProgression:
+    menu.menuScreen()
